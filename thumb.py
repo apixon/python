@@ -8,10 +8,10 @@ import Queue
 import re
 #import psycopg2
 
-lsdir = "/webapps/hello_django/static/dummy/vd/"
-rootdir = '/webapps/hello_django/static/dummy/th/'
-logfile =  "/webapps/hello_django/static/dummy/read.txt"
-sqlfile =  "/webapps/hello_django/static/dummy/sql.txt"
+lsdir = "/webapps/static/dummy/vd/"
+rootdir = '/webapps/static/dummy/th/'
+logfile =  "/webapps/static/dummy/read.txt"
+sqlfile =  "/webapps/static/dummy/sql.txt"
 lsdirs = os.listdir(lsdir)
 
 f = open(logfile, 'a')
@@ -97,7 +97,7 @@ def process_data(id,threadName, q):
 							vindex +=1
 						new_im.show()
 						new_im.save(spimagefile)
-						sqlline = 'INSERT INTO bucketboob_video ( "user_id", "Title", "Description", "ThumbnailUrl","SpriteImageUrl", "VideoUrl", "Slug", "RunTime", "Views", "Likes", "Dislikes","Vote","IsPromoted","IsActive","IsDeleted","created", "updated") VALUES' +" ('1','NULL','', '%s',  '%s', '%s','',   '%s' ,'','','','','0','1','0','2015-09-23 17:19:01-04', '2015-09-23 17:20:35.141236-04')" % (ThumbnailUrl,SpriteImageUrl,vs,seconds_minutes(videoruntime))
+						sqlline = 'INSERT INTO table ( "user_id", "Title", "Description", "ThumbnailUrl","SpriteImageUrl", "VideoUrl", "Slug", "RunTime", "Views", "Likes", "Dislikes","Vote","IsPromoted","IsActive","IsDeleted","created", "updated") VALUES' +" ('1','NULL','', '%s',  '%s', '%s','',   '%s' ,'','','','','0','1','0','2015-09-23 17:19:01-04', '2015-09-23 17:20:35.141236-04')" % (ThumbnailUrl,SpriteImageUrl,vs,seconds_minutes(videoruntime))
 						s.write('\n' + sqlline)
 					# else:
 					f.write("\n index:%s - num:%s - voffset:%s - vtime-%s" % (index,num,voffset,vtime))
@@ -242,17 +242,16 @@ for i in xrange(0,1500,150):
 	vindex +=1
 new_im.show()
 new_im.save(spimagefile)
-# sqlline = 'INSERT INTO bucketboob_video ( "user_id", "Title", "Description", "ThumbnailUrl","SpriteImageUrl", "VideoUrl", "Slug", "RunTime", "Views", "Likes", "Dislikes","Vote","IsPromoted","IsActive","IsDeleted","created", "updated") VALUES' +" ('1','NULL','', '%s',  '%s', '%s','',   '%s' ,'','','','','0','1','0','2015-09-23 17:19:01-04', '2015-09-23 17:20:35.141236-04')" % (ThumbnailUrl,SpriteImageUrl,vs,seconds_minutes(videoruntime))
-# f.write("SpriteImageUrl = ok")
+#  f.write("SpriteImageUrl = ok")
 # s.write('\n' + sqlline)
 # time.sleep(10)'''
 
 
-#conn = psycopg2.connect(database="hello", user="hello_django", password="14f6001f28b8947914f6001f28b89479", host="localhost", port="5432")
+#conn = psycopg2.connect(database="", user="", password="", host="localhost", port="")
 #cur = conn.cursor()
-#cur.execute("INSERT INTO bucketboob_video (ThumbnailUrl,SpriteImageUrl,VideoUrl,RunTime) \
+#cur.execute("INSERT INTO table (ThumbnailUrl,SpriteImageUrl,VideoUrl,RunTime) \
 #  VALUES (%s, %s,  %s, %s )" % (ThumbnailUrl,SpriteImageUrl,vs,videoruntime));
-# s.write("\n INSERT INTO bucketboob_video (ThumbnailUrl,SpriteImageUrl,VideoUrl,RunTime) \
+# s.write("\n INSERT INTO table (ThumbnailUrl,SpriteImageUrl,VideoUrl,RunTime) \
 # 		VALUES (%s, %s,  %s, %s )" % (ThumbnailUrl,SpriteImageUrl,vs,videoruntime))
 #conn.commit()
 #print "Records created successfully";
