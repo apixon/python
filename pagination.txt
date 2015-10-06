@@ -1,0 +1,30 @@
+view.py
+class ChannelsVideoView(ListView):
+	categories =  Category.objects.all()
+	PromotedVideos = None;
+	context_object_name="videos"
+	template_name='frontend/channels.html'
+	paginate_by = 1
+	
+	def get_queryset(self, *args, **kwargs):
+		self.PromotedVideos=Video.objects.filter(category__Slug=self.kwargs['slug'],IsPromoted='1').order_by('-created')[:6]
+		return  Video.objects.filter(category__Slug=self.kwargs['slug']).order_by('-created')
+	  
+
+	def get_context_data(self, **kwargs):
+		# Call the base implementation first to get a context
+		context = super(ChannelsVideoView, self).get_context_data(**kwargs)
+		# Add in the publisher
+		context['PromotedVideos'] = self.PromotedVideos
+		context['categories'] = self.categories
+		context['catslug'] = self.kwargs['slug']		
+		return context
+ 
+url.py 
+url(r'^channels/new-(?P<slug>[-\w]+)-(?P<page>\d+)\.html$', ChannelsVideoView.as_view(),name='channels_video_view'),
+    
+	
+channels.html
+{% load bootstrap_pagination %}
+{% bootstrap_paginate page_obj range=7 centered="true" show_first_last="true" url_view_name="channels_video_view" url_extra_kwargs="slug" url_extra_args="indian" } %}
+	 
