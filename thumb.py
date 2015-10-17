@@ -7,11 +7,12 @@ import threading
 import Queue
 import re
 #import psycopg2
+import uuid
 
-lsdir = "/webapps/static/dummy/vd/"
-rootdir = '/webapps/static/dummy/th/'
-logfile =  "/webapps/static/dummy/read.txt"
-sqlfile =  "/webapps/static/dummy/sql.txt"
+lsdir = "/root/v4/"
+rootdir = '/root/dummy/th/'
+logfile =  "/root/dummy/read.txt"
+sqlfile =  "/root/dummy/sql.txt"
 lsdirs = os.listdir(lsdir)
 
 f = open(logfile, 'a')
@@ -23,7 +24,7 @@ THdir = []
 # 	#videofile = lsdir + vs
 # 	filename = lsdir + vs
 # 	extension = os.path.splitext(filename)[1]
-# 	curtime += 1
+# 	curtime  = uuid.uuid4().hex
 # 	new_file_name = lsdir + 'VD_%s%s' % (curtime, extension)
 # 	os.rename(filename, new_file_name)
 
@@ -52,13 +53,25 @@ def process_data(id,threadName, q):
 		if not workQueue.empty():
 			vs = q.get()
 			videofile = lsdir + vs
-			curnum =  re.search(r'\d+', vs).group(0)
-
-			vruntime = subprocess.check_output("avconv -i %s 2>&1 | grep Duration | awk '{print $2}' | tr -d ," %(videofile), shell=True)
 			
-			x = time.strptime(vruntime .rstrip('\r\n'),'%H:%M:%S.%f')
-			videoruntime = int(datetime.timedelta(hours=x.tm_hour,minutes=x.tm_min,seconds=x.tm_sec).total_seconds())
-			f.write("\n %s" % videoruntime)
+
+			
+			try:
+				curnum = vs.split('.')[0]   #re.search(r'\d+', vs).group(0)
+				vruntime = subprocess.check_output("avconv -i %s 2>&1 | grep Duration | awk '{print $2}' | tr -d ," %(videofile), shell=True)
+				x = time.strptime(vruntime .rstrip('\r\n'),'%H:%M:%S.%f')
+				videoruntime = int(datetime.timedelta(hours=x.tm_hour,minutes=x.tm_min,seconds=x.tm_sec).total_seconds())
+				f.write("\n %s" % videoruntime)
+			except IOError as (errno, strerror):
+				videoruntime = 0
+				f.write("\n not srap time IOError for  videofile:%s" % (videofile))
+			except ValueError:
+				videoruntime = 0
+				f.write("\n not srap time ValueError for  videofile:%s" % (videofile))
+			except:
+				videoruntime = 0
+				f.write("\n not srap time for videofile:%s" % (videofile))
+
 			if videoruntime > 60 :
 				voffset = int (videoruntime / 10)
 				vtime = videoruntime  - (voffset/2)
@@ -79,8 +92,14 @@ def process_data(id,threadName, q):
 						os.makedirs(throotdir)
 						os.makedirs(thdir)
 					if index == 5:
-						process = subprocess.check_output("avconv -ss %s -i %s -qscale:v 2 -vframes 1 -s 638x504  %s" %(num,videofile,mimagefile),shell=True)	
-					process = subprocess.check_output("avconv -ss %s -i %s -qscale:v 2 -vframes 1 -s 160x120  %s" %(num,videofile,imagefile),shell=True)	
+						try:
+							process = subprocess.check_output("avconv -ss %s -i %s -qscale:v 2 -vframes 1 -s 638x504  %s" %(num,videofile,mimagefile),shell=True)	
+						except IOError, e:
+							f.write("\n not srap big video thumb for  videofile:%s" % (videofile))
+					try:
+						process = subprocess.check_output("avconv -ss %s -i %s -qscale:v 2 -vframes 1 -s 160x120  %s" %(num,videofile,imagefile),shell=True)	
+					except IOError, e:
+						f.write("\n index:%s - num:%s - videofile:%s" % (index,num,videofile))
 					# print "avconv  -itsoffset -%s  -i %s -vcodec mjpeg -vframes 1 -an -f rawvideo -s 638x504 %s"  % (num,videofile, imagefile)
 					
 					if index == 10:
@@ -89,21 +108,33 @@ def process_data(id,threadName, q):
 						spimagefile = throotdir + "/sp_%s.jpg" % (curnum)
 						SpriteImageUrl = "TH_%s/sp_%s.jpg" % (curnum,curnum)
 						ThumbnailUrl = "TH_%s/v_%s.jpg" % (curnum,curnum)
+						VideoThumbnailUrl = "TH_%s/%s/5.jpg"  % (curnum,curnum)
+						VideoThumbnailDir = "TH_%s" % (curnum)
+						goodfile = True
 						for i in xrange(0,1600,160):
 							imagefile = thdir + "/%s.jpg" % (vindex)
-							im = Image.open(imagefile)
-							new_im.paste(im, (i,0))
+							try:
+								im = Image.open(imagefile)
+								new_im.paste(im, (i,0))
+							except IOError, e:
+								goodfile = False
+								f.write("\n sindex:%s - svideofile:%s" % (i,imagefile))
 							#print imagefile
 							vindex +=1
 						new_im.show()
 						new_im.save(spimagefile)
-						sqlline = 'INSERT INTO table ( "user_id", "Title", "Description", "ThumbnailUrl","SpriteImageUrl", "VideoUrl", "Slug", "RunTime", "Views", "Likes", "Dislikes","Vote","IsPromoted","IsActive","IsDeleted","created", "updated") VALUES' +" ('1','NULL','', '%s',  '%s', '%s','',   '%s' ,'','','','','0','1','0','2015-09-23 17:19:01-04', '2015-09-23 17:20:35.141236-04')" % (ThumbnailUrl,SpriteImageUrl,vs,seconds_minutes(videoruntime))
-						s.write('\n' + sqlline)
+						crt = datetime.datetime.now()
+						sqlline = 'INSERT INTO tablename ( "created") VALUES' +" ( '%s')" % ( crt)
+						if goodfile:
+							s.write('\n' + sqlline)
+						time.sleep(1)
 					# else:
-					f.write("\n index:%s - num:%s - voffset:%s - vtime-%s" % (index,num,voffset,vtime))
+					f.write("\n index:%s - num:%s - voffset:%s - vtime-%s - videofile:%s" % (index,num,voffset,vtime,videofile))
 					index +=1
 			 	f.write("\n \n")
-				
+			else:
+				f.write("\n not scrap  thumb videofile:%s" % (videofile))
+				f.write("\n \n")	
 
 			queueLock.release()
 			#print "curnum:%s  - %s processing %s \n\n" % (curnum,threadName, vs)
@@ -226,32 +257,33 @@ s.close()
 # 	seconds = seconds % 60
 # 	return "%02d:%02d" % (minutes,seconds)
 # print THdir
-'''# save stripe image to one image
-for vs in lsdirs: 
-curtime =  int(time.time())	
-vindex=1;
-new_im = Image.new('RGB', (1500,120))
-spimagefile = throotdir + "/sp_%s.jpg" % (curtime)
-# SpriteImageUrl = "TH_%s/sp_%s.jpg" % (curtime,curtime)
-# ThumbnailUrl = "TH_%s/v_%s.jpg" % (curtime,curtime)
-for i in xrange(0,1500,150):
-	imagefile = thdir + "/%s.jpg" % (vindex)
-	im = Image.open(imagefile)
-	new_im.paste(im, (i,0))
-	#print imagefile
-	vindex +=1
-new_im.show()
-new_im.save(spimagefile)
-#  f.write("SpriteImageUrl = ok")
-# s.write('\n' + sqlline)
-# time.sleep(10)'''
+# '''# save stripe image to one image
+# for vs in lsdirs: 
+# curtime =  int(time.time())	
+# vindex=1;
+# new_im = Image.new('RGB', (1500,120))
+# spimagefile = throotdir + "/sp_%s.jpg" % (curtime)
+# # SpriteImageUrl = "TH_%s/sp_%s.jpg" % (curtime,curtime)
+# # ThumbnailUrl = "TH_%s/v_%s.jpg" % (curtime,curtime)
+# for i in xrange(0,1500,150):
+# 	imagefile = thdir + "/%s.jpg" % (vindex)
+# 	im = Image.open(imagefile)
+# 	new_im.paste(im, (i,0))
+# 	#print imagefile
+# 	vindex +=1
+# new_im.show()
+# new_im.save(spimagefile)
+# # sqlline = 'INSERT INTO tablename (  "created", "updated") VALUES' +" ( '2015-09-23 17:19:01-04', '2015-09-23 17:20:35.141236-04')" % ( )
+# # f.write("SpriteImageUrl = ok")
+# # s.write('\n' + sqlline)
+# # time.sleep(10)'''
 
 
-#conn = psycopg2.connect(database="", user="", password="", host="localhost", port="")
+#conn = psycopg2.connect(database="xx", user="xxx", password="xxx", host="xx", port="xxx")
 #cur = conn.cursor()
-#cur.execute("INSERT INTO table (ThumbnailUrl,SpriteImageUrl,VideoUrl,RunTime) \
+#cur.execute("INSERT INTO tablename (ThumbnailUrl,SpriteImageUrl,VideoUrl,RunTime) \
 #  VALUES (%s, %s,  %s, %s )" % (ThumbnailUrl,SpriteImageUrl,vs,videoruntime));
-# s.write("\n INSERT INTO table (ThumbnailUrl,SpriteImageUrl,VideoUrl,RunTime) \
+# s.write("\n INSERT INTO tablename (ThumbnailUrl,SpriteImageUrl,VideoUrl,RunTime) \
 # 		VALUES (%s, %s,  %s, %s )" % (ThumbnailUrl,SpriteImageUrl,vs,videoruntime))
 #conn.commit()
 #print "Records created successfully";
